@@ -2,6 +2,12 @@
 
 CLI audit tool for GitHub organization with [OPA/Rego](https://www.openpolicyagent.org/docs/latest/policy-language/).
 
+## Features
+
+- Crawls GitHub repository meta data of your organization
+- Evaluates the meta data with policy written by [Rego](https://www.openpolicyagent.org/docs/latest/policy-language/) or inquiry to [OPA](https://github.com/open-policy-agent/opa) server
+- Exit with non-zero when detecting violation and notify the violation to Slack
+
 ## Setup
 
 ### 1) Create a new GitHub App
@@ -31,6 +37,7 @@ Please note the following items
     - `input.collaborators`: A list of collaborator (a result of https://docs.github.com/en/rest/reference/collaborators#list-repository-collaborators)
     - `input.hooks`: A list of webhooks (a result of https://docs.github.com/en/rest/reference/webhooks#list-repository-webhooks)
     - `input.teams`: A list of team (a result of https://docs.github.com/en/rest/reference/repos#list-repository-teams)
+    - `input.timestamp`: Unix timestamp of scan
 - Result: Put detected violation
     - `category`: Title to indicate violation category
     - `message`: Describe violation detail
