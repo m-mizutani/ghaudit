@@ -56,7 +56,7 @@ fail[res] {
 
     res = {
         "category": "Collaborator must not have permissions of maintain and admin",
-        "msg": sprintf("%s has maintain:%v admin:%v", [user.login, user.permissions.maintain, user.permissions.admin]),
+        "message": sprintf("%s has maintain:%v admin:%v", [user.login, user.permissions.maintain, user.permissions.admin]),
     }
 }
 ```
@@ -98,6 +98,8 @@ $ ghaudit -o [your_org_name] -p ./policy
 - `--output`, `-o`: Output file. `-` means stdout.
 - `--slack-webhook` (`GHAUDIT_SLACK_WEBHOOK`): Slack incoming webhook URL.
 - `--fail`: Exit with non-zero when detecting violation
+- `--thread`: Specify number of thread to retrieve repository meta data
+- `--limit`: Specify limit number of auditing repository
 
 ## License
 
