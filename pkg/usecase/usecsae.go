@@ -1,7 +1,10 @@
 package usecase
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -17,6 +20,7 @@ type Usecase struct {
 	clients *infra.Clients
 	thread  int64
 	limit   int64
+	dumpDir string
 }
 
 func New(clients *infra.Clients, options ...Option) *Usecase {
@@ -43,6 +47,12 @@ func WithThread(n int64) Option {
 func WithLimit(n int64) Option {
 	return func(uc *Usecase) {
 		uc.limit = n
+	}
+}
+
+func WithDump(dir string) Option {
+	return func(uc *Usecase) {
+		uc.dumpDir = filepath.Clean(dir)
 	}
 }
 
@@ -111,7 +121,44 @@ func createRegoInput(ctx *types.Context, client githubapp.Client, repo *github.R
 	return input, nil
 }
 
+func (x *Usecase) evaluate(ctx *types.Context, input *regoInput) ([]*auditResult, error) {
+	if x.dumpDir != "" {
+		path := filepath.Join(x.dumpDir, fmt.Sprintf("%s.json", input.Repo.GetName()))
+		fd, err := os.Create(path)
+		if err != nil {
+			return nil, goerr.Wrap(err)
+		}
+		if err := json.NewEncoder(fd).Encode(input); err != nil {
+			return nil, goerr.Wrap(err)
+		}
+	}
+
+	var results []*auditResult
+	var output regoOutput
+	repoName := input.Repo.GetFullName()
+	utils.Logger.With("repo", repoName).Trace("evaluating repository data")
+	if err := x.clients.Policy().Eval(ctx, input, &output); err != nil {
+		return nil, goerr.Wrap(err).With("owner", input.Repo.Owner.GetLogin()).With("repo", repoName)
+	}
+
+	for _, fail := range output.Fail {
+		results = append(results, &auditResult{
+			regoFail:     *fail,
+			RepoFullName: input.Repo.GetFullName(),
+			ScannedAt:    time.Unix(input.Timestamp, 0),
+		})
+	}
+
+	return results, nil
+}
+
 func (x *Usecase) Audit(ctx *types.Context, owner string) error {
+	if x.dumpDir != "" {
+		if err := os.MkdirAll(x.dumpDir, 0777); err != nil {
+			return goerr.Wrap(err)
+		}
+	}
+
 	repos, err := x.clients.GitHubApp().GetRepos(ctx, owner)
 	if err != nil {
 		return goerr.Wrap(err).With("owner", owner)
@@ -123,7 +170,7 @@ func (x *Usecase) Audit(ctx *types.Context, owner string) error {
 		limit = int(x.limit)
 	}
 
-	var results []*auditResult
+	var allResults []*auditResult
 
 	errCh := make(chan error)
 	inputCh := make(chan *regoInput, limit)
@@ -163,21 +210,11 @@ Loop:
 			if input == nil {
 				break Loop
 			}
-
-			var output regoOutput
-			repoName := input.Repo.GetFullName()
-			utils.Logger.With("repo", repoName).Trace("evaluating repository data")
-			if err := x.clients.Policy().Eval(ctx, input, &output); err != nil {
-				return goerr.Wrap(err).With("owner", owner).With("repo", repoName)
+			results, err := x.evaluate(ctx, input)
+			if err != nil {
+				return err
 			}
-
-			for _, fail := range output.Fail {
-				results = append(results, &auditResult{
-					regoFail:     *fail,
-					RepoFullName: input.Repo.GetFullName(),
-					ScannedAt:    time.Unix(input.Timestamp, 0),
-				})
-			}
+			allResults = append(allResults, results...)
 
 		case err := <-errCh:
 			if err != nil {
@@ -186,9 +223,9 @@ Loop:
 		}
 	}
 
-	if len(results) > 0 {
-		fmt.Printf("\n===== %d violation detected =====\n", len(results))
-		for _, result := range results {
+	if len(allResults) > 0 {
+		fmt.Printf("\n===== %d violation detected =====\n", len(allResults))
+		for _, result := range allResults {
 			fmt.Printf("- [%s] %s: %s\n", result.RepoFullName, result.Category, result.Message)
 		}
 		fmt.Printf("\n")

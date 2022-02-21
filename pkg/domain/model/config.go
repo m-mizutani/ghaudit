@@ -29,8 +29,9 @@ type Config struct {
 	SlackWebhook string `zlog:"secret"`
 	Fail         bool
 
-	Thread int64
-	Limit  int64
+	Thread  int64
+	Limit   int64
+	DumpDir string
 }
 
 func (x *Config) Validate() error {

@@ -129,6 +129,13 @@ func Run(argv []string) error {
 				Destination: &cfg.Limit,
 				Value:       0,
 			},
+			&cli.StringFlag{
+				Name:        "dump-dir",
+				Aliases:     []string{"d"},
+				Usage:       "Directory to dump input data",
+				EnvVars:     []string{types.EnvLimit},
+				Destination: &cfg.DumpDir,
+			},
 		},
 		Before: func(c *cli.Context) error {
 			cfg.Headers = headers.Value()
@@ -210,6 +217,7 @@ func action(cfg *model.Config) func(c *cli.Context) error {
 		uc := usecase.New(clients,
 			usecase.WithLimit(cfg.Limit),
 			usecase.WithThread(cfg.Thread),
+			usecase.WithDump(cfg.DumpDir),
 		)
 
 		ctx := types.NewContext(types.WithCtx(c.Context))
