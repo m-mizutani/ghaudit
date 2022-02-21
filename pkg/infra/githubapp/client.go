@@ -9,6 +9,7 @@ import (
 	"github.com/m-mizutani/goerr"
 
 	"github.com/m-mizutani/ghaudit/pkg/domain/types"
+	"github.com/m-mizutani/ghaudit/pkg/utils"
 )
 
 type Client interface {
@@ -36,11 +37,10 @@ func New(appID, installID int64, privateKey []byte) (Client, error) {
 
 func (x *client) GetRepos(ctx *types.Context, owner string) ([]*github.Repository, error) {
 	const perPage = 100
-	page := 1
 	var repos []*github.Repository
 
-	for {
-		got, resp, err := x.client.Repositories.List(ctx, owner, &github.RepositoryListOptions{
+	for page := 1; ; page++ {
+		got, resp, err := x.client.Repositories.ListByOrg(ctx, owner, &github.RepositoryListByOrgOptions{
 			ListOptions: github.ListOptions{
 				Page:    page,
 				PerPage: perPage,
@@ -54,6 +54,7 @@ func (x *client) GetRepos(ctx *types.Context, owner string) ([]*github.Repositor
 			return nil, types.ErrUnexpectedGitHubResp.New().
 				With("code", resp.StatusCode).With("body", body)
 		}
+		utils.Logger.With("got", len(got)).Debug("retrieved repos")
 
 		repos = append(repos, got...)
 		if len(got) < perPage {
@@ -66,10 +67,9 @@ func (x *client) GetRepos(ctx *types.Context, owner string) ([]*github.Repositor
 
 func (x *client) GetBranches(ctx *types.Context, owner, repo string) ([]*github.Branch, error) {
 	const perPage = 100
-	page := 1
 	var branches []*github.Branch
 
-	for {
+	for page := 1; ; page++ {
 		got, resp, err := x.client.Repositories.ListBranches(ctx, owner, repo, &github.BranchListOptions{
 			ListOptions: github.ListOptions{
 				Page:    page,
@@ -96,10 +96,9 @@ func (x *client) GetBranches(ctx *types.Context, owner, repo string) ([]*github.
 
 func (x *client) GetCollaborators(ctx *types.Context, owner, repo string) ([]*github.User, error) {
 	const perPage = 100
-	page := 1
 	var users []*github.User
 
-	for {
+	for page := 1; ; page++ {
 		got, resp, err := x.client.Repositories.ListCollaborators(ctx, owner, repo, &github.ListCollaboratorsOptions{
 			ListOptions: github.ListOptions{
 				Page:    page,
@@ -126,10 +125,9 @@ func (x *client) GetCollaborators(ctx *types.Context, owner, repo string) ([]*gi
 
 func (x *client) GetHooks(ctx *types.Context, owner, repo string) ([]*github.Hook, error) {
 	const perPage = 100
-	page := 1
 	var hooks []*github.Hook
 
-	for {
+	for page := 1; ; page++ {
 		got, resp, err := x.client.Repositories.ListHooks(ctx, owner, repo, &github.ListOptions{
 			Page:    page,
 			PerPage: perPage,
@@ -154,10 +152,9 @@ func (x *client) GetHooks(ctx *types.Context, owner, repo string) ([]*github.Hoo
 
 func (x *client) GetTeams(ctx *types.Context, owner, repo string) ([]*github.Team, error) {
 	const perPage = 100
-	page := 1
 	var teams []*github.Team
 
-	for {
+	for page := 1; ; page++ {
 		got, resp, err := x.client.Repositories.ListTeams(ctx, owner, repo, &github.ListOptions{
 			Page:    page,
 			PerPage: perPage,
