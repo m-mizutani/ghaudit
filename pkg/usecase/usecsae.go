@@ -193,6 +193,7 @@ Loop:
 			if input == nil {
 				break Loop
 			}
+			utils.Logger.With("repo", input.Repo.GetFullName()).Info("retrieved repo data")
 			results, err := x.evaluate(ctx, input)
 			if err != nil {
 				return err
