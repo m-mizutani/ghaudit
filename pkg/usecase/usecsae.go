@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/go-github/v42/github"
+	"github.com/m-mizutani/ghaudit/pkg/domain/model"
 	"github.com/m-mizutani/ghaudit/pkg/domain/types"
 	"github.com/m-mizutani/ghaudit/pkg/infra"
 	"github.com/m-mizutani/ghaudit/pkg/infra/githubapp"
@@ -56,31 +57,13 @@ func WithDump(dir string) Option {
 	}
 }
 
-type regoInput struct {
-	Repo          *github.Repository `json:"repo"`
-	Branches      []*github.Branch   `json:"branches"`
-	Collaborators []*github.User     `json:"collaborators"`
-	Hooks         []*github.Hook     `json:"hooks"`
-	Teams         []*github.Team     `json:"teams"`
-	Timestamp     int64              `json:"timestamp"`
-}
-
-type regoOutput struct {
-	Fail []*regoFail `json:"fail"`
-}
-
-type regoFail struct {
-	Category string `json:"category"`
-	Message  string `json:"message"`
-}
-
 type auditResult struct {
-	regoFail
+	model.RegoFail
 	RepoFullName string    `json:"repo"`
 	ScannedAt    time.Time `json:"scanned_at"`
 }
 
-func createRegoInput(ctx *types.Context, client githubapp.Client, repo *github.Repository) (*regoInput, error) {
+func createRegoInput(ctx *types.Context, client githubapp.Client, repo *github.Repository) (*model.RegoInput, error) {
 	now := time.Now().UTC()
 	repoName := repo.GetName()
 	ownerName := repo.Owner.GetLogin()
@@ -107,7 +90,7 @@ func createRegoInput(ctx *types.Context, client githubapp.Client, repo *github.R
 		return nil, goerr.Wrap(err).With("owner", ownerName).With("repo", repoName)
 	}
 
-	input := &regoInput{
+	input := &model.RegoInput{
 		Repo:          repo,
 		Branches:      branches,
 		Collaborators: collaborators,
@@ -121,7 +104,7 @@ func createRegoInput(ctx *types.Context, client githubapp.Client, repo *github.R
 	return input, nil
 }
 
-func (x *Usecase) evaluate(ctx *types.Context, input *regoInput) ([]*auditResult, error) {
+func (x *Usecase) evaluate(ctx *types.Context, input *model.RegoInput) ([]*auditResult, error) {
 	if x.dumpDir != "" {
 		path := filepath.Join(x.dumpDir, fmt.Sprintf("%s.json", input.Repo.GetName()))
 		fd, err := os.Create(path)
@@ -134,7 +117,7 @@ func (x *Usecase) evaluate(ctx *types.Context, input *regoInput) ([]*auditResult
 	}
 
 	var results []*auditResult
-	var output regoOutput
+	var output model.RegoOutput
 	repoName := input.Repo.GetFullName()
 	utils.Logger.With("repo", repoName).Trace("evaluating repository data")
 	if err := x.clients.Policy().Eval(ctx, input, &output); err != nil {
@@ -143,7 +126,7 @@ func (x *Usecase) evaluate(ctx *types.Context, input *regoInput) ([]*auditResult
 
 	for _, fail := range output.Fail {
 		results = append(results, &auditResult{
-			regoFail:     *fail,
+			RegoFail:     *fail,
 			RepoFullName: input.Repo.GetFullName(),
 			ScannedAt:    time.Unix(input.Timestamp, 0),
 		})
@@ -173,7 +156,7 @@ func (x *Usecase) Audit(ctx *types.Context, owner string) error {
 	var allResults []*auditResult
 
 	errCh := make(chan error)
-	inputCh := make(chan *regoInput, limit)
+	inputCh := make(chan *model.RegoInput, limit)
 	repoCh := make(chan *github.Repository, limit)
 
 	var wg sync.WaitGroup

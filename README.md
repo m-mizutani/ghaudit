@@ -91,6 +91,8 @@ $ ghaudit -o [your_org_name] -p ./policy
     - Use OPA server
         - `--server`, `-s`: OPA server URL
         - `--header`, `-H`: HTTP header of inquiry request to OPA server
+- `--dump`: Specify directory to dump retrieved data from GitHub
+- `--load`: Specify directory to load retrieved data from GitHub
 
 #### Optional
 

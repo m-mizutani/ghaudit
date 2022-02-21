@@ -16,5 +16,6 @@ const (
 	EnvFail            = "GHAUDIT_FAIL"
 	EnvThread          = "GHAUDIT_THREAD"
 	EnvLimit           = "GHAUDIT_LIMIT"
-	EnvDumpDir         = "GHAUDIT_DUMP_DIR"
+	EnvDumpDir         = "GHAUDIT_DUMP"
+	EnvLoadDir         = "GHAUDIT_LOAD"
 )

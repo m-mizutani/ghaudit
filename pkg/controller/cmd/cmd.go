@@ -28,7 +28,6 @@ func Run(argv []string) error {
 				Aliases:     []string{"o"},
 				Usage:       "GitHub owner (or organization) name to be audited",
 				EnvVars:     []string{types.EnvOwner},
-				Required:    true,
 				Destination: &cfg.Owner,
 			},
 
@@ -37,14 +36,12 @@ func Run(argv []string) error {
 				Name:        "app-id",
 				EnvVars:     []string{types.EnvAppID},
 				Usage:       "GitHub App ID",
-				Required:    true,
 				Destination: &cfg.AppID,
 			},
 			&cli.Int64Flag{
 				Name:        "install-id",
 				EnvVars:     []string{types.EnvInstallID},
 				Usage:       "GitHub Install ID",
-				Required:    true,
 				Destination: &cfg.InstallID,
 			},
 			&cli.StringFlag{
@@ -129,12 +126,18 @@ func Run(argv []string) error {
 				Destination: &cfg.Limit,
 				Value:       0,
 			},
+
 			&cli.StringFlag{
-				Name:        "dump-dir",
-				Aliases:     []string{"d"},
+				Name:        "dump",
 				Usage:       "Directory to dump input data",
-				EnvVars:     []string{types.EnvLimit},
+				EnvVars:     []string{types.EnvDumpDir},
 				Destination: &cfg.DumpDir,
+			},
+			&cli.StringFlag{
+				Name:        "load",
+				Usage:       "Directory to load input data",
+				EnvVars:     []string{types.EnvLoadDir},
+				Destination: &cfg.LoadDir,
 			},
 		},
 		Before: func(c *cli.Context) error {
@@ -172,21 +175,31 @@ func Run(argv []string) error {
 func action(cfg *model.Config) func(c *cli.Context) error {
 	return func(c *cli.Context) error {
 		utils.Logger.With("config", cfg).Info("Audit starting...")
+		var ghapp githubapp.Client
 
-		var privateKey []byte
-		if cfg.PrivateKeyData != "" {
-			privateKey = []byte(cfg.PrivateKeyData)
-		} else {
-			raw, err := os.ReadFile(cfg.PrivateKeyFile)
-			if err != nil {
-				return goerr.Wrap(err, "failed to read private key file")
+		if cfg.LoadDir == "" {
+			var privateKey []byte
+			if cfg.PrivateKeyData != "" {
+				privateKey = []byte(cfg.PrivateKeyData)
+			} else {
+				raw, err := os.ReadFile(cfg.PrivateKeyFile)
+				if err != nil {
+					return goerr.Wrap(err, "failed to read private key file")
+				}
+				privateKey = raw
 			}
-			privateKey = raw
-		}
 
-		ghapp, err := githubapp.New(cfg.AppID, cfg.InstallID, privateKey)
-		if err != nil {
-			return goerr.Wrap(err).With("appID", cfg.AppID).With("installID", cfg.InstallID)
+			app, err := githubapp.New(cfg.AppID, cfg.InstallID, privateKey)
+			if err != nil {
+				return goerr.Wrap(err).With("appID", cfg.AppID).With("installID", cfg.InstallID)
+			}
+			ghapp = app
+		} else {
+			loader, err := githubapp.NewloaderClient(cfg.LoadDir)
+			if err != nil {
+				return err
+			}
+			ghapp = loader
 		}
 
 		var policyClient policy.Client
@@ -214,11 +227,16 @@ func action(cfg *model.Config) func(c *cli.Context) error {
 			infra.WithGitHubApp(ghapp),
 			infra.WithPolicy(policyClient),
 		)
-		uc := usecase.New(clients,
+
+		ucOptions := []usecase.Option{
 			usecase.WithLimit(cfg.Limit),
 			usecase.WithThread(cfg.Thread),
-			usecase.WithDump(cfg.DumpDir),
-		)
+		}
+		if cfg.DumpDir != "" {
+			ucOptions = append(ucOptions, usecase.WithDump(cfg.DumpDir))
+		}
+
+		uc := usecase.New(clients, ucOptions...)
 
 		ctx := types.NewContext(types.WithCtx(c.Context))
 		if err := uc.Audit(ctx, cfg.Owner); err != nil {
