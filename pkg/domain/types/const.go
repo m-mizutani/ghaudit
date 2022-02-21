@@ -14,4 +14,6 @@ const (
 	EnvLogLevel        = "GHAUDIT_LOG_LEVEL"
 	EnvSlackWebhookURL = "GHAUDIT_SLACK_WEBHOOK"
 	EnvFail            = "GHAUDIT_FAIL"
+	EnvThread          = "GHAUDIT_THREAD"
+	EnvLimit           = "GHAUDIT_LIMIT"
 )

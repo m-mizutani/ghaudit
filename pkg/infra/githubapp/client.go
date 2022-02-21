@@ -54,7 +54,7 @@ func (x *client) GetRepos(ctx *types.Context, owner string) ([]*github.Repositor
 			return nil, types.ErrUnexpectedGitHubResp.New().
 				With("code", resp.StatusCode).With("body", body)
 		}
-		utils.Logger.With("got", len(got)).Debug("retrieved repos")
+		utils.Logger.With("got", len(got)).Trace("retrieved repos")
 
 		repos = append(repos, got...)
 		if len(got) < perPage {

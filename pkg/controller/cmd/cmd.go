@@ -94,7 +94,7 @@ func Run(argv []string) error {
 			&cli.StringFlag{
 				Name:        "log-level",
 				Aliases:     []string{"l"},
-				Usage:       "Log level [error|warn|info|debug]",
+				Usage:       "Log level [error|warn|info|debug|trace]",
 				EnvVars:     []string{types.EnvLogLevel},
 				Destination: &cfg.LogLevel,
 				Value:       "info",
@@ -112,6 +112,22 @@ func Run(argv []string) error {
 				Usage:       "Exit with non-zero code when detecting violation",
 				EnvVars:     []string{types.EnvFail},
 				Destination: &cfg.Fail,
+			},
+
+			// Runtime options
+			&cli.Int64Flag{
+				Name:        "thread",
+				Usage:       "Thread num",
+				EnvVars:     []string{types.EnvThread},
+				Destination: &cfg.Thread,
+				Value:       4,
+			},
+			&cli.Int64Flag{
+				Name:        "limit",
+				Usage:       "Limit of auditing repository",
+				EnvVars:     []string{types.EnvLimit},
+				Destination: &cfg.Limit,
+				Value:       0,
 			},
 		},
 		Before: func(c *cli.Context) error {
@@ -187,10 +203,14 @@ func action(cfg *model.Config) func(c *cli.Context) error {
 			policyClient = p
 		}
 
-		uc := usecase.New(infra.New(
+		clients := infra.New(
 			infra.WithGitHubApp(ghapp),
 			infra.WithPolicy(policyClient),
-		))
+		)
+		uc := usecase.New(clients,
+			usecase.WithLimit(cfg.Limit),
+			usecase.WithThread(cfg.Thread),
+		)
 
 		ctx := types.NewContext(types.WithCtx(c.Context))
 		if err := uc.Audit(ctx, cfg.Owner); err != nil {

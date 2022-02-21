@@ -28,6 +28,9 @@ type Config struct {
 	LogLevel     string
 	SlackWebhook string `zlog:"secret"`
 	Fail         bool
+
+	Thread int64
+	Limit  int64
 }
 
 func (x *Config) Validate() error {
@@ -36,7 +39,7 @@ func (x *Config) Validate() error {
 		validation.Field(&x.AppID, validation.Required),
 		validation.Field(&x.InstallID, validation.Required),
 		validation.Field(&x.LogFormat, validation.In("text", "json"), validation.Required),
-		validation.Field(&x.LogLevel, validation.In("debug", "info", "warn", "error"), validation.Required),
+		validation.Field(&x.LogLevel, validation.In("trace", "debug", "info", "warn", "error"), validation.Required),
 		validation.Field(&x.URL, is.URL),
 	); err != nil {
 		return types.ErrInvalidConfig.Wrap(err)
