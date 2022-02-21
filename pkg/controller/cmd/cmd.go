@@ -117,7 +117,7 @@ func Run(argv []string) error {
 				Usage:       "Thread num",
 				EnvVars:     []string{types.EnvThread},
 				Destination: &cfg.Thread,
-				Value:       4,
+				Value:       1,
 			},
 			&cli.Int64Flag{
 				Name:        "limit",
