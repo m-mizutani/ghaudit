@@ -142,6 +142,7 @@ func Run(argv []string) error {
 		},
 		Before: func(c *cli.Context) error {
 			cfg.Headers = headers.Value()
+			utils.Logger.With("config", cfg).Info("Setting up...")
 
 			if err := cfg.Validate(); err != nil {
 				return err
@@ -174,7 +175,6 @@ func Run(argv []string) error {
 
 func action(cfg *model.Config) func(c *cli.Context) error {
 	return func(c *cli.Context) error {
-		utils.Logger.With("config", cfg).Info("Audit starting...")
 		var ghapp githubapp.Client
 
 		if cfg.LoadDir == "" {
