@@ -4,9 +4,14 @@ import (
 	"github.com/google/go-github/v42/github"
 )
 
+type RegoInputBranch struct {
+	github.Branch
+	Protection *github.Protection `json:"protection"`
+}
+
 type RegoInput struct {
 	Repo          *github.Repository `json:"repo"`
-	Branches      []*github.Branch   `json:"branches"`
+	Branches      []*RegoInputBranch `json:"branches"`
 	Collaborators []*github.User     `json:"collaborators"`
 	Hooks         []*github.Hook     `json:"hooks"`
 	Teams         []*github.Team     `json:"teams"`

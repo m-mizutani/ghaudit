@@ -60,7 +60,24 @@ func (x *loaderClient) GetRepos(ctx *types.Context, owner string) ([]*github.Rep
 }
 
 func (x *loaderClient) GetBranches(ctx *types.Context, owner string, repo string) ([]*github.Branch, error) {
-	return x.input[owner+"/"+repo].Branches, nil
+	branches := x.input[owner+"/"+repo].Branches
+	var resp []*github.Branch
+	for _, b := range branches {
+		resp = append(resp, &b.Branch)
+	}
+
+	return resp, nil
+}
+
+func (x *loaderClient) GetBranchProtection(ctx *types.Context, owner, repo, branch string) (*github.Protection, error) {
+	branches := x.input[owner+"/"+repo].Branches
+	for _, b := range branches {
+		if b.GetName() == branch {
+			return b.Protection, nil
+		}
+	}
+
+	return nil, nil
 }
 
 func (x *loaderClient) GetCollaborators(ctx *types.Context, owner string, repo string) ([]*github.User, error) {

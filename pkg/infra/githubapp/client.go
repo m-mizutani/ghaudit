@@ -15,6 +15,7 @@ import (
 type Client interface {
 	GetRepos(ctx *types.Context, owner string) ([]*github.Repository, error)
 	GetBranches(ctx *types.Context, owner, repo string) ([]*github.Branch, error)
+	GetBranchProtection(ctx *types.Context, owner, repo, branch string) (*github.Protection, error)
 	GetCollaborators(ctx *types.Context, owner, repo string) ([]*github.User, error)
 	GetHooks(ctx *types.Context, owner, repo string) ([]*github.Hook, error)
 	GetTeams(ctx *types.Context, owner, repo string) ([]*github.Team, error)
@@ -92,6 +93,22 @@ func (x *client) GetBranches(ctx *types.Context, owner, repo string) ([]*github.
 	}
 
 	return branches, nil
+}
+
+func (x *client) GetBranchProtection(ctx *types.Context, owner, repo, branch string) (*github.Protection, error) {
+	got, resp, err := x.client.Repositories.GetBranchProtection(ctx, owner, repo, branch)
+
+	if err != nil {
+		return nil, goerr.Wrap(err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, types.ErrUnexpectedGitHubResp.New().
+			With("code", resp.StatusCode).With("body", body)
+	}
+
+	return got, nil
+
 }
 
 func (x *client) GetCollaborators(ctx *types.Context, owner, repo string) ([]*github.User, error) {

@@ -29,24 +29,39 @@ func createRegoInput(ctx *types.Context, client githubapp.Client, repo *github.R
 
 	utils.Logger.With("repo", repoName).Trace("retrieving repository data")
 
-	branches, err := client.GetBranches(ctx, ownerName, repoName)
+	githubBranches, err := client.GetBranches(ctx, ownerName, repoName)
 	if err != nil {
-		return nil, goerr.Wrap(err).With("owner", ownerName).With("repo", repoName)
+		return nil, goerr.Wrap(err)
+	}
+
+	var branches []*model.RegoInputBranch
+	for _, branch := range githubBranches {
+		b := &model.RegoInputBranch{
+			Branch: *branch,
+		}
+		if branch.GetProtected() {
+			protection, err := client.GetBranchProtection(ctx, ownerName, repoName, branch.GetName())
+			if err != nil {
+				return nil, goerr.Wrap(err)
+			}
+			b.Protection = protection
+		}
+		branches = append(branches, b)
 	}
 
 	collaborators, err := client.GetCollaborators(ctx, ownerName, repoName)
 	if err != nil {
-		return nil, goerr.Wrap(err).With("owner", ownerName).With("repo", repoName)
+		return nil, goerr.Wrap(err)
 	}
 
 	hooks, err := client.GetHooks(ctx, ownerName, repoName)
 	if err != nil {
-		return nil, goerr.Wrap(err).With("owner", ownerName).With("repo", repoName)
+		return nil, goerr.Wrap(err)
 	}
 
 	teams, err := client.GetTeams(ctx, ownerName, repoName)
 	if err != nil {
-		return nil, goerr.Wrap(err).With("owner", ownerName).With("repo", repoName)
+		return nil, goerr.Wrap(err)
 	}
 
 	input := &model.RegoInput{
