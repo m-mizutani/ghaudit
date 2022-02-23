@@ -1,6 +1,8 @@
-# ghaudit
+# ghaudit [![Gosec](https://github.com/m-mizutani/ghaudit/actions/workflows/gosec.yml/badge.svg)](https://github.com/m-mizutani/ghaudit/actions/workflows/gosec.yml) [![Lint](https://github.com/m-mizutani/ghaudit/actions/workflows/lint.yml/badge.svg)](https://github.com/m-mizutani/ghaudit/actions/workflows/lint.yml) [![Test](https://github.com/m-mizutani/ghaudit/actions/workflows/test.yml/badge.svg)](https://github.com/m-mizutani/ghaudit/actions/workflows/test.yml)
 
-CLI audit tool for GitHub organization with [OPA/Rego](https://www.openpolicyagent.org/docs/latest/policy-language/).
+CLI audit tool for GitHub repositories with [OPA/Rego](https://www.openpolicyagent.org/docs/latest/policy-language/).
+
+![](https://user-images.githubusercontent.com/605953/155263397-5b0363df-6c24-4ad8-80c7-50fbe0c82176.png)
 
 ## Features
 
@@ -44,6 +46,8 @@ Please note the following items
 
 #### Policy example
 
+Example 1. Check if collaborator does not have overly permissions
+
 ```rego
 package github.repo
 
@@ -61,6 +65,22 @@ fail[res] {
 }
 ```
 
+Example 2. Check if default branch is protected
+
+```rego
+package github.repo
+
+fail[msg] {
+	branch := input.branches[_]
+    branch.name == input.repo.default_branch
+    branch.protected == false
+    msg := {
+        "category": "default branch must be protected",
+        "message": sprintf("default branch is %s", [branch.name]),
+    }
+}
+```
+
 ### 3) [Optional] Retrieve webhook URL of Slack
 
 `ghaudit` can notify a detected violation via Slack by incoming webhook. Setup incoming webhook according to https://api.slack.com/messaging/webhooks if you want.
@@ -73,6 +93,24 @@ $ export GHAUDIT_INSTALL_ID=0000000
 $ export GHAUDIT_PRIVATE_KEY_FILE=xxxxxx.2022-02-18.private-key.pem
 $ export GHAUDIT_SLACK_WEBHOOK=https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
 $ ghaudit -o [your_org_name] -p ./policy
+```
+
+### Test and debug policy
+
+- `--dump`: Exports retrieved repository data to directory
+- `--load`: Imports local repository data exported by `--dump` option
+- `--log-level dump`: Output `print` result in Rego if you use local policy
+
+Example:
+```bash
+(skip export environment variables)
+$ ghaudit -o [your_org_name] -p ./policy --dump ./repo_data
+# output repository data to ./repo_data
+$ ls ./repo_data
+foo-repo.json    baa-repo.json
+# if something wrong, update local Rego file(s), then
+$ ghaudit -o [your_org_name] -p ./policy --load ./repo_data --log-level debug
+# Re-evaluate updated policy with local data rapidly and output `print` function result also
 ```
 
 ### Options
