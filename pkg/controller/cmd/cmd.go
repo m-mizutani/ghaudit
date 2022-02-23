@@ -8,6 +8,7 @@ import (
 	"github.com/m-mizutani/ghaudit/pkg/domain/types"
 	"github.com/m-mizutani/ghaudit/pkg/infra"
 	"github.com/m-mizutani/ghaudit/pkg/infra/githubapp"
+	"github.com/m-mizutani/ghaudit/pkg/infra/notify"
 	"github.com/m-mizutani/ghaudit/pkg/infra/policy"
 	"github.com/m-mizutani/ghaudit/pkg/usecase"
 	"github.com/m-mizutani/ghaudit/pkg/utils"
@@ -139,16 +140,22 @@ func Run(argv []string) error {
 				EnvVars:     []string{types.EnvLoadDir},
 				Destination: &cfg.LoadDir,
 			},
+
+			&cli.StringFlag{
+				Name:        "slack-url",
+				Usage:       "Slack URL to notify violation",
+				EnvVars:     []string{types.EnvSlackWebhook},
+				Destination: &cfg.SlackWebhook,
+			},
 		},
 		Before: func(c *cli.Context) error {
 			cfg.Headers = headers.Value()
+			if err := utils.RenewLogger(cfg.LogLevel, cfg.LogFormat); err != nil {
+				return err
+			}
 			utils.Logger.With("config", cfg).Info("Setting up...")
 
 			if err := cfg.Validate(); err != nil {
-				return err
-			}
-
-			if err := utils.RenewLogger(cfg.LogLevel, cfg.LogFormat); err != nil {
 				return err
 			}
 
@@ -165,7 +172,21 @@ func Run(argv []string) error {
 			}
 			// nothing to do ErrViolationDetected without cfg.Fail
 		} else {
-			utils.Logger.Err(err).Error("exit with error")
+			log := utils.Logger.Log()
+			var goErr *goerr.Error
+			if errors.As(err, &goErr) {
+				values := goErr.Values()
+				if len(values) > 0 {
+					for k, v := range goErr.Values() {
+						log = log.With(k, v)
+					}
+				}
+
+				if cfg.LogLevel == "debug" || cfg.LogLevel == "trace" {
+					log = log.With("trace", goErr.Stacks())
+				}
+			}
+			log.Error(err.Error())
 			return goerr.Wrap(err)
 		}
 	}
@@ -223,10 +244,15 @@ func action(cfg *model.Config) func(c *cli.Context) error {
 			policyClient = p
 		}
 
-		clients := infra.New(
+		infraOptions := []infra.Option{
 			infra.WithGitHubApp(ghapp),
 			infra.WithPolicy(policyClient),
-		)
+		}
+		if cfg.SlackWebhook != "" {
+			infraOptions = append(infraOptions, infra.WithSlack(notify.NewSlackWebhook(cfg.SlackWebhook)))
+		}
+
+		clients := infra.New(infraOptions...)
 
 		ucOptions := []usecase.Option{
 			usecase.WithLimit(cfg.Limit),

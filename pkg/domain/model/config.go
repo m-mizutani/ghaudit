@@ -57,6 +57,7 @@ func (x *Config) Validate() error {
 		validation.Field(&x.URL, is.URL),
 		validation.Field(&x.Thread, validation.Min(1)),
 		validation.Field(&x.Limit, validation.Min(0)),
+		validation.Field(&x.SlackWebhook, is.URL),
 	); err != nil {
 		return types.ErrInvalidConfig.Wrap(err)
 	}

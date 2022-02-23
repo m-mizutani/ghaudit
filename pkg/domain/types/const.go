@@ -18,4 +18,5 @@ const (
 	EnvLimit           = "GHAUDIT_LIMIT"
 	EnvDumpDir         = "GHAUDIT_DUMP"
 	EnvLoadDir         = "GHAUDIT_LOAD"
+	EnvSlackWebhook    = "GHAUDIT_SLACK_WEBHOOK"
 )
