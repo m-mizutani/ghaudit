@@ -142,7 +142,7 @@ func Run(argv []string) error {
 			},
 
 			&cli.StringFlag{
-				Name:        "--slack-webhook",
+				Name:        "slack-webhook",
 				Usage:       "Slack incoming webhook URL to notify violation",
 				EnvVars:     []string{types.EnvSlackWebhook},
 				Destination: &cfg.SlackWebhook,
