@@ -123,6 +123,18 @@ func (x *Usecase) Audit(ctx *types.Context, owner string) error {
 	}
 	utils.Logger.With("total repos", len(repos)).Trace("retried repository list")
 
+	if x.skipArchived {
+		var notArchived []*github.Repository
+		for _, repo := range repos {
+			if repo.GetArchived() {
+				continue
+			}
+			notArchived = append(notArchived, repo)
+		}
+		repos = notArchived
+		utils.Logger.With("total repos", len(repos)).Trace("filtered by skip-archived option")
+	}
+
 	limit := len(repos)
 	if 0 < x.limit && int(x.limit) < limit {
 		limit = int(x.limit)

@@ -28,6 +28,7 @@ type Config struct {
 	LogLevel     string
 	SlackWebhook string `zlog:"secret"`
 	Fail         bool
+	SkipArchived bool
 
 	Thread  int64
 	Limit   int64

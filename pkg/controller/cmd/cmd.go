@@ -111,6 +111,12 @@ func Run(argv []string) error {
 				EnvVars:     []string{types.EnvFail},
 				Destination: &cfg.Fail,
 			},
+			&cli.BoolFlag{
+				Name:        "skip-archived",
+				Usage:       "Skip archived repository",
+				EnvVars:     []string{types.EnvSkipArchived},
+				Destination: &cfg.SkipArchived,
+			},
 
 			// Runtime options
 			&cli.Int64Flag{
@@ -257,6 +263,7 @@ func action(cfg *model.Config) func(c *cli.Context) error {
 		ucOptions := []usecase.Option{
 			usecase.WithLimit(cfg.Limit),
 			usecase.WithThread(cfg.Thread),
+			usecase.WithSkipArchived(cfg.SkipArchived),
 		}
 		if cfg.DumpDir != "" {
 			ucOptions = append(ucOptions, usecase.WithDump(cfg.DumpDir))

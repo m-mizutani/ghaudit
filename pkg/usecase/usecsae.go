@@ -11,6 +11,8 @@ type Usecase struct {
 	thread  int64
 	limit   int64
 	dumpDir string
+
+	skipArchived bool
 }
 
 func New(clients *infra.Clients, options ...Option) *Usecase {
@@ -43,5 +45,11 @@ func WithLimit(n int64) Option {
 func WithDump(dir string) Option {
 	return func(uc *Usecase) {
 		uc.dumpDir = filepath.Clean(dir)
+	}
+}
+
+func WithSkipArchived(skip bool) Option {
+	return func(uc *Usecase) {
+		uc.skipArchived = skip
 	}
 }
