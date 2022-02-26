@@ -94,7 +94,7 @@ func (x *Usecase) evaluate(ctx *types.Context, input *model.RegoInput) ([]*audit
 	var output model.RegoOutput
 	repoName := input.Repo.GetFullName()
 	utils.Logger.With("repo", repoName).Trace("evaluating repository data")
-	if err := x.clients.Policy().Eval(ctx, input, &output); err != nil {
+	if err := x.clients.Policy().Query(ctx, input, &output); err != nil {
 		return nil, goerr.Wrap(err).With("owner", input.Repo.Owner.GetLogin()).With("repo", repoName)
 	}
 

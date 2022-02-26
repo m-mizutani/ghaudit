@@ -6,9 +6,11 @@ require (
 	github.com/bradleyfalzon/ghinstallation/v2 v2.0.4
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/google/go-github/v42 v42.0.0
-	github.com/m-mizutani/goerr v0.1.3
+	github.com/m-mizutani/goerr v0.1.4
+	github.com/m-mizutani/opac v0.1.0
 	github.com/m-mizutani/zlog v0.2.0
 	github.com/open-policy-agent/opa v0.37.2
+	github.com/slack-go/slack v0.10.2
 	github.com/stretchr/testify v1.7.0
 	github.com/urfave/cli/v2 v2.3.0
 )
@@ -33,7 +35,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20200313005456-10cdbea86bc0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
-	github.com/slack-go/slack v0.10.2 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/yashtewari/glob-intersection v0.0.0-20180916065949-5c77d914dd0b // indirect

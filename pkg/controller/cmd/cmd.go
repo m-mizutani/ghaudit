@@ -9,10 +9,10 @@ import (
 	"github.com/m-mizutani/ghaudit/pkg/infra"
 	"github.com/m-mizutani/ghaudit/pkg/infra/githubapp"
 	"github.com/m-mizutani/ghaudit/pkg/infra/notify"
-	"github.com/m-mizutani/ghaudit/pkg/infra/policy"
 	"github.com/m-mizutani/ghaudit/pkg/usecase"
 	"github.com/m-mizutani/ghaudit/pkg/utils"
 	"github.com/m-mizutani/goerr"
+	"github.com/m-mizutani/opac"
 
 	"github.com/urfave/cli/v2"
 )
@@ -223,10 +223,10 @@ func action(cfg *model.Config) func(c *cli.Context) error {
 			ghapp = loader
 		}
 
-		var policyClient policy.Client
+		var policyClient opac.Client
 		if cfg.Policy != "" {
 			utils.Logger.With("policy", cfg.Policy).Info("Use local policy file(s)")
-			p, err := policy.NewLocal(cfg.Policy, policy.WithPackage(cfg.Package))
+			p, err := opac.NewLocal(opac.WithDir(cfg.Policy), opac.WithPackage(cfg.Package))
 			if err != nil {
 				return err
 			}
@@ -237,7 +237,7 @@ func action(cfg *model.Config) func(c *cli.Context) error {
 			if err != nil {
 				return err
 			}
-			p, err := policy.NewRemoteWithHTTPClient(cfg.URL, httpClient)
+			p, err := opac.NewRemote(cfg.URL, opac.WithHTTPClient(httpClient))
 			if err != nil {
 				return err
 			}
